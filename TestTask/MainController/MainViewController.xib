@@ -10,6 +10,8 @@
     <objects>
         <placeholder placeholderIdentifier="IBFilesOwner" id="-1" userLabel="File's Owner" customClass="MainViewController" customModule="TestTask" customModuleProvider="target">
             <connections>
+                <outlet property="overlayView" destination="CIy-vX-epd" id="t9o-kS-RZZ"/>
+                <outlet property="previewView" destination="moJ-BN-eUG" id="pwT-T0-bOG"/>
                 <outlet property="view" destination="i5M-Pr-FkT" id="sfx-zR-JGt"/>
             </connections>
         </placeholder>
@@ -17,8 +19,28 @@
         <view clearsContextBeforeDrawing="NO" contentMode="scaleToFill" id="i5M-Pr-FkT">
             <rect key="frame" x="0.0" y="0.0" width="375" height="667"/>
             <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+            <subviews>
+                <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="moJ-BN-eUG" customClass="PreviewView" customModule="ObjectDetection" customModuleProvider="target">
+                    <rect key="frame" x="0.0" y="0.0" width="375" height="667"/>
+                    <color key="backgroundColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                </view>
+                <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="CIy-vX-epd" customClass="OverlayView" customModule="ObjectDetection" customModuleProvider="target">
+                    <rect key="frame" x="0.0" y="0.0" width="375" height="667"/>
+                    <color key="backgroundColor" white="1" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                </view>
+            </subviews>
             <viewLayoutGuide key="safeArea" id="fnl-2z-Ty3"/>
             <color key="backgroundColor" systemColor="systemBackgroundColor"/>
+            <constraints>
+                <constraint firstItem="CIy-vX-epd" firstAttribute="trailing" secondItem="moJ-BN-eUG" secondAttribute="trailing" id="3eK-eD-HTZ"/>
+                <constraint firstItem="CIy-vX-epd" firstAttribute="top" secondItem="moJ-BN-eUG" secondAttribute="top" id="9j8-X3-zvm"/>
+                <constraint firstItem="moJ-BN-eUG" firstAttribute="top" secondItem="i5M-Pr-FkT" secondAttribute="top" id="BCs-HL-6QH"/>
+                <constraint firstItem="moJ-BN-eUG" firstAttribute="leading" secondItem="fnl-2z-Ty3" secondAttribute="leading" id="Fx7-vZ-me7"/>
+                <constraint firstItem="CIy-vX-epd" firstAttribute="bottom" secondItem="moJ-BN-eUG" secondAttribute="bottom" id="GWR-iJ-kqb"/>
+                <constraint firstItem="CIy-vX-epd" firstAttribute="leading" secondItem="moJ-BN-eUG" secondAttribute="leading" id="JGu-hD-hNv"/>
+                <constraint firstAttribute="trailing" secondItem="moJ-BN-eUG" secondAttribute="trailing" id="dSL-QQ-XQ1"/>
+                <constraint firstItem="fnl-2z-Ty3" firstAttribute="bottom" secondItem="moJ-BN-eUG" secondAttribute="bottom" id="rbS-cx-zi3"/>
+            </constraints>
             <point key="canvasLocation" x="187" y="137"/>
         </view>
     </objects>
