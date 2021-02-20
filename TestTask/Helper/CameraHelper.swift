@@ -26,7 +26,9 @@ class CameraFeedManager: NSObject {
     private let sessionQueue = DispatchQueue(label: "sessionQueue")
     private var cameraConfiguration: CameraConfiguration = .failed
     private lazy var videoDataOutput = AVCaptureVideoDataOutput()
+    private lazy var photoDataOutput = AVCapturePhotoOutput()
     private var isSessionRunning = false
+    var photoTakeCompletion: ((UIImage?) -> (Void))?
     
     // MARK: CameraFeedManagerDelegate
     weak var delegate: CameraFeedManagerDelegate?
@@ -69,21 +71,18 @@ class CameraFeedManager: NSObject {
                 self.isSessionRunning = self.session.isRunning
             }
         }
-        
     }
     
     func resumeInterruptedSession(withCompletion completion: @escaping (Bool) -> ()) {
-        
         sessionQueue.async {
             self.startSession()
-            
             DispatchQueue.main.async {
                 completion(self.isSessionRunning)
             }
         }
     }
 
-    private func startSession() {
+    func startSession() {
         self.session.startRunning()
         self.isSessionRunning = self.session.isRunning
     }
@@ -112,8 +111,7 @@ class CameraFeedManager: NSObject {
         AVCaptureDevice.requestAccess(for: .video) { (granted) in
             if !granted {
                 self.cameraConfiguration = .permissionDenied
-            }
-            else {
+            } else {
                 self.cameraConfiguration = .success
             }
             completion(granted)
@@ -155,9 +153,11 @@ class CameraFeedManager: NSObject {
             let videoDeviceInput = try AVCaptureDeviceInput(device: camera)
             if session.canAddInput(videoDeviceInput) {
                 session.addInput(videoDeviceInput)
+                if session.canAddOutput(photoDataOutput) {
+                    session.addOutput(photoDataOutput)
+                }
                 return true
-            }
-            else {
+            } else {
                 return false
             }
         }
@@ -199,8 +199,23 @@ extension CameraFeedManager: AVCaptureVideoDataOutputSampleBufferDelegate {
             return
         }
         
-        // Delegates the pixel buffer to the ViewController.
         delegate?.didOutput(pixelBuffer: imagePixelBuffer)
     }
+}
+
+extension CameraFeedManager: AVCapturePhotoCaptureDelegate {
     
+    func handleTakePhoto() {
+        let photoSettings = AVCapturePhotoSettings()
+        if let photoPreviewType = photoSettings.availablePreviewPhotoPixelFormatTypes.first {
+            photoSettings.previewPhotoFormat = [kCVPixelBufferPixelFormatTypeKey as String: photoPreviewType]
+            photoDataOutput.capturePhoto(with: photoSettings, delegate: self)
+        }
+    }
+    
+    func photoOutput(_ output: AVCapturePhotoOutput, didFinishProcessingPhoto photo: AVCapturePhoto, error: Error?) {
+        guard let imageData = photo.fileDataRepresentation() else { return }
+        let previewImage = UIImage(data: imageData)
+        self.photoTakeCompletion?(previewImage)
+    }
 }
