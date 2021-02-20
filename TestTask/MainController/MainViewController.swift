@@ -16,11 +16,11 @@ class MainViewController: UIViewController {
         
     // Holds the results at any time
     private var result: Result?
-    private var previousInferenceTimeMs: TimeInterval = Date.distantPast.timeIntervalSince1970 * 1000
+    private var previousInferenceTimeMs = Date.distantPast.timeIntervalSince1970 * 1000
     
     // MARK: Controllers that manage functionality
     private lazy var cameraFeedManager = CameraFeedManager(previewView: previewView)
-    private var modelDataHandler: ModelDataHandler? = ModelDataHandler(modelFileInfo: MobileNetSSD.modelInfo, labelsFileInfo: MobileNetSSD.labelsInfo)
+    private var modelDataHandler = ModelDataHandler(modelFileInfo: MobileNetSSD.modelInfo, labelsFileInfo: MobileNetSSD.labelsInfo)
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -28,11 +28,25 @@ class MainViewController: UIViewController {
             fatalError("Failed to load model")
         }
         cameraFeedManager.delegate = self
+        cameraFeedManager.photoTakeCompletion = { [weak self] photo in
+            guard let self = self else { return }
+            let objectEditController = ObjectEditViewController()
+            objectEditController.image = photo
+            objectEditController.delegate = self
+            self.present(objectEditController, animated: true) {
+                self.cameraFeedManager.stopSession()
+            }
+        }
     }
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         cameraFeedManager.checkCameraConfigurationAndStartSession()
+    }
+    
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        cameraFeedManager.stopSession()
     }
 }
 
@@ -72,9 +86,9 @@ extension MainViewController: CameraFeedManagerDelegate {
     }
     
     @objc  func runModel(onPixelBuffer pixelBuffer: CVPixelBuffer) {
-                
+        
         let currentTimeMs = Date().timeIntervalSince1970 * 1000
-        guard  (currentTimeMs - previousInferenceTimeMs) >= delayBetweenInferencesMs else {
+        guard (currentTimeMs - previousInferenceTimeMs) >= delayBetweenInferencesMs else {
             return
         }
         
@@ -107,6 +121,13 @@ extension MainViewController: CameraFeedManagerDelegate {
         
         for inference in inferences {
             
+            let confidenceValue = Int(inference.confidence * 100.0)
+            
+            guard confidenceValue < 70 else {
+                cameraFeedManager.handleTakePhoto()
+                return
+            }
+            
             var convertedRect = inference.rect.applying(CGAffineTransform(scaleX: self.overlayView.bounds.size.width / imageSize.width, y: self.overlayView.bounds.size.height / imageSize.height))
             
             if convertedRect.origin.x < 0 {
@@ -125,7 +146,6 @@ extension MainViewController: CameraFeedManagerDelegate {
                 convertedRect.size.width = self.overlayView.bounds.maxX - convertedRect.origin.x - self.edgeOffset
             }
             
-            let confidenceValue = Int(inference.confidence * 100.0)
             let string = "\(inference.className)  (\(confidenceValue)%)"
             
             let size = string.size(usingFont: self.displayFont)
@@ -142,8 +162,13 @@ extension MainViewController: CameraFeedManagerDelegate {
     }
     
     func draw(objectOverlays: [ObjectOverlay]) {
-        
         self.overlayView.objectOverlays = objectOverlays
         self.overlayView.setNeedsDisplay()
+    }
+}
+
+extension MainViewController: ObjectEditViewControllerDelegate {
+    func didDismissTapped() {
+        cameraFeedManager.startSession()
     }
 }
